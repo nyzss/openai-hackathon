@@ -505,7 +505,7 @@ export function ConsolePage() {
    */
   return (
     <div data-component="ConsolePage">
-      <div className="content-top">
+      {/* <div className="content-top">
         <div className="content-title">
           <img src="/openai-logomark.svg" />
           <span>realtime console</span>
@@ -521,7 +521,7 @@ export function ConsolePage() {
             />
           )}
         </div>
-      </div>
+      </div> */}
       <div className="content-main">
         <div className="content-logs">
           <div className="content-block events">
@@ -533,8 +533,8 @@ export function ConsolePage() {
                 <canvas ref={serverCanvasRef} />
               </div>
             </div>
-            <div className="content-block-title">events</div>
-            <div className="content-block-body" ref={eventsScrollRef}>
+            <div className="content-block-title text-6xl">events</div>
+            {/* <div className="content-block-body" ref={eventsScrollRef}>
               {!realtimeEvents.length && `awaiting connection...`}
               {realtimeEvents.map((realtimeEvent, i) => {
                 const count = realtimeEvent.count;
@@ -596,7 +596,7 @@ export function ConsolePage() {
                   </div>
                 );
               })}
-            </div>
+            </div> */}
           </div>
           <div className="content-block conversation">
             <div className="content-block-title">conversation</div>
@@ -691,7 +691,7 @@ export function ConsolePage() {
             />
           </div>
         </div>
-        <div className="content-right">
+        {/* <div className="content-right">
           <div className="content-block map">
             <div className="content-block-title">get_weather()</div>
             <div className="content-block-title bottom">
@@ -724,7 +724,7 @@ export function ConsolePage() {
               {JSON.stringify(memoryKv, null, 2)}
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
