@@ -21,6 +21,9 @@ import { WavRenderer } from '../utils/wav_renderer';
 
 import { X, Zap } from 'react-feather';
 import { Button } from '../components/button/Button';
+import OpenAI from 'openai';
+import { z } from 'zod';
+import { zodResponseFormat } from 'openai/helpers/zod';
 
 import './ConsolePage.scss';
 import { WebcamComponent } from '../components/camera/camera';
@@ -33,6 +36,11 @@ interface RealtimeEvent {
   source: 'client' | 'server';
   count?: number;
   event: { [key: string]: any };
+}
+
+interface UploadedImage {
+  url: string;
+  file: File;
 }
 
 export function ConsolePage() {
@@ -91,6 +99,94 @@ export function ConsolePage() {
    */
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<
+    typeof ArtPieceInfo
+  > | null>(null);
+
+  const openai = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const ArtPieceInfo = z.object({
+    name: z.string(),
+    artist: z.string(),
+    artpiece: z.boolean(),
+    type: z.string(),
+  });
+
+  // Add this handler function
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (files) {
+      const newImages: UploadedImage[] = Array.from(files).map((file) => ({
+        url: URL.createObjectURL(file),
+        file: file,
+      }));
+      setUploadedImages((prev) => [...prev, ...newImages]);
+
+      for (const image of newImages) {
+        // Convert the file to base64
+        const base64Image = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image.file);
+        });
+
+        const completion = await openai.beta.chat.completions.parse({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You extract email addresses into JSON data.',
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste",
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: base64Image,
+                  },
+                },
+              ],
+            },
+          ],
+          response_format: zodResponseFormat(ArtPieceInfo, 'event'),
+        });
+        console.log(completion.choices[0].message.parsed);
+        setCurrentArtInfo(completion.choices[0].message.parsed);
+        connectConversation(completion.choices[0].message.parsed!);
+      }
+    }
+  };
+  /**
+   * Utility for formatting the timing of logs
+   */
+  const formatTime = useCallback((timestamp: string) => {
+    const startTime = startTimeRef.current;
+    const t0 = new Date(startTime).valueOf();
+    const t1 = new Date(timestamp).valueOf();
+    const delta = t1 - t0;
+    const hs = Math.floor(delta / 10) % 100;
+    const s = Math.floor(delta / 1000) % 60;
+    const m = Math.floor(delta / 60_000) % 60;
+    const pad = (n: number) => {
+      let s = n + '';
+      while (s.length < 2) {
+        s = '0' + s;
+      }
+      return s;
+    };
+    return `${pad(m)}:${pad(s)}.${pad(hs)}`;
+  }, []);
 
   /**
    * When you click the API key
@@ -108,36 +204,55 @@ export function ConsolePage() {
    * Connect to conversation:
    * WavRecorder taks speech input, WavStreamPlayer output, client is API client
    */
-  const connectConversation = useCallback(async () => {
-    const client = clientRef.current;
-    const wavRecorder = wavRecorderRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
+  const connectConversation = useCallback(
+    async (ArtInfo?: z.infer<typeof ArtPieceInfo>) => {
+      const client = clientRef.current;
+      const wavRecorder = wavRecorderRef.current;
+      const wavStreamPlayer = wavStreamPlayerRef.current;
 
-    // Set state variables
-    startTimeRef.current = new Date().toISOString();
-    setIsConnected(true);
-    setItems(client.conversation.getItems());
+      // Set state variables
+      startTimeRef.current = new Date().toISOString();
+      setIsConnected(true);
+      setItems(client.conversation.getItems());
 
-    // Connect to microphone
-    await wavRecorder.begin();
+      // Connect to microphone
+      await wavRecorder.begin();
 
-    // Connect to audio output
-    await wavStreamPlayer.connect();
+      // Connect to audio output
+      await wavStreamPlayer.connect();
 
-    // Connect to realtime API
-    await client.connect();
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: `Hello!`,
-        // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-      },
-    ]);
+      // Connect to realtime API
+      await client.connect();
 
-    if (client.getTurnDetectionType() === 'server_vad') {
-      await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-    }
-  }, []);
+      if (ArtInfo) {
+        const initialMessage = `This is ${
+          ArtInfo.artist ? `by ${ArtInfo.artist}` : 'an artwork'
+        }, ${ArtInfo.name ? `called "${ArtInfo.name}"` : ''}. It is ${
+          ArtInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
+        }. What would you like to know about it?`;
+
+        client.sendUserMessageContent([
+          {
+            type: 'input_text',
+            text: initialMessage,
+          },
+        ]);
+      }
+
+      // client.sendUserMessageContent([
+      //   {
+      //     type: `input_text`,
+      //     // text: `Hello!`,
+      //     text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
+      //   },
+      // ]);
+
+      if (client.getTurnDetectionType() === 'server_vad') {
+        await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+      }
+    },
+    [currentArtInfo]
+  );
 
   /**
    * Disconnect and reset conversation state
@@ -414,12 +529,23 @@ export function ConsolePage() {
               iconPosition={isConnected ? 'end' : 'start'}
               icon={isConnected ? X : Zap}
               buttonStyle={isConnected ? 'regular' : 'action'}
-              onClick={
-                isConnected ? disconnectConversation : connectConversation
-              }
+              // onClick={
+              //   isConnected ? disconnectConversation : connectConversation
+              // }
             />
           </div>
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageUpload}
+          className="file-input"
+          id="image-upload"
+        />
+        <label htmlFor="image-upload" className="upload-button">
+          Choose Images
+        </label>
       </div>
     </div>
   );

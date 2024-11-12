@@ -48,6 +48,9 @@ export class RealtimeRelay {
       try {
         const event = JSON.parse(data);
         this.log(`Relaying "${event.type}" to OpenAI`);
+        if (event.type === 'message') {
+          event.voice = 'ash'; // You can change this to any available voice
+        }
         client.realtime.send(event.type, event);
       } catch (e) {
         console.error(e.message);
