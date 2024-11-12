@@ -26,7 +26,7 @@ import { Map } from '../components/Map';
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
-import { WebcamComponent } from '../components/camera/camera.js';
+import { WebcamComponent } from '../components/camera/camera';
 
 /**
  * Type for result from get_weather() function call
