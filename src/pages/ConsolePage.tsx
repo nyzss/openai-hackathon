@@ -28,15 +28,10 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import './ConsolePage.scss';
 import { WebcamComponent } from '../components/camera/camera';
 
+import Webcam from 'react-webcam';
 /**
  * Type for all event logs
  */
-interface RealtimeEvent {
-  time: string;
-  source: 'client' | 'server';
-  count?: number;
-  event: { [key: string]: any };
-}
 
 interface UploadedImage {
   url: string;
@@ -117,77 +112,45 @@ export function ConsolePage() {
   });
 
   // Add this handler function
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
+
+  // const handleImageUpload = async (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  const handleImageUpload = async (data: string) => {
+    const files = data;
     if (files) {
-      const newImages: UploadedImage[] = Array.from(files).map((file) => ({
-        url: URL.createObjectURL(file),
-        file: file,
-      }));
-      setUploadedImages((prev) => [...prev, ...newImages]);
+      // Convert the file to base64
 
-      for (const image of newImages) {
-        // Convert the file to base64
-        const base64Image = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(image.file);
-        });
-
-        const completion = await openai.beta.chat.completions.parse({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'You extract email addresses into JSON data.',
-            },
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste",
+      const completion = await openai.beta.chat.completions.parse({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You extract email addresses into JSON data.',
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste",
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: data,
                 },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: base64Image,
-                  },
-                },
-              ],
-            },
-          ],
-          response_format: zodResponseFormat(ArtPieceInfo, 'event'),
-        });
-        console.log(completion.choices[0].message.parsed);
-        setCurrentArtInfo(completion.choices[0].message.parsed);
-        connectConversation(completion.choices[0].message.parsed!);
-      }
+              },
+            ],
+          },
+        ],
+        response_format: zodResponseFormat(ArtPieceInfo, 'event'),
+      });
+      console.log(completion.choices[0].message.parsed);
+      setCurrentArtInfo(completion.choices[0].message.parsed);
+      connectConversation(completion.choices[0].message.parsed!);
     }
   };
-  /**
-   * Utility for formatting the timing of logs
-   */
-  const formatTime = useCallback((timestamp: string) => {
-    const startTime = startTimeRef.current;
-    const t0 = new Date(startTime).valueOf();
-    const t1 = new Date(timestamp).valueOf();
-    const delta = t1 - t0;
-    const hs = Math.floor(delta / 10) % 100;
-    const s = Math.floor(delta / 1000) % 60;
-    const m = Math.floor(delta / 60_000) % 60;
-    const pad = (n: number) => {
-      let s = n + '';
-      while (s.length < 2) {
-        s = '0' + s;
-      }
-      return s;
-    };
-    return `${pad(m)}:${pad(s)}.${pad(hs)}`;
-  }, []);
-
   /**
    * When you click the API key
    */
@@ -480,6 +443,21 @@ export function ConsolePage() {
     };
   }, []);
 
+  const webcamRef = useRef<Webcam | null>(null);
+
+  const [rawData, setRawData] = useState('');
+
+  const capture = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+
+      if (imageSrc != null) {
+        // setRawData(imageSrc);
+        handleImageUpload(imageSrc);
+      }
+    }
+  }, [webcamRef]);
+
   return (
     <div data-component="ConsolePage">
       <div className="content-main">
@@ -494,35 +472,30 @@ export function ConsolePage() {
               </div>
             </div>
             <div className="content-block-title text-6xl">events</div>
+            <div className="flex space-x-5">
+              <div className="flex flex-col space-y-4 mb-4  max-w-xl ">
+                <Webcam
+                  audio={false}
+                  // height={720}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  // width={1280}
+                  // videoConstraints={videoConstraints}
+                  mirrored={true}
+                />
+                {/* make better styles for the button */}
+                <button
+                  className="bg-blue-500 hover:bg-blue-600 text-gray-200 p-3 rounded-md font-bold text-xl mx-auto"
+                  onClick={capture}
+                >
+                  Capture
+                </button>
+              </div>
+              <div>{rawData && <img src={rawData} alt="mon image wsh" />}</div>
+            </div>
+
             <WebcamComponent />
           </div>
-          {/* <div className="content-block conversation">
-            <div className="content-block-title">conversation</div>
-            <div className="content-block-body" data-conversation-content>
-              {!items.length && `awaiting connection...`}
-              {items.map((conversationItem, i) => {
-                return (
-                  <div className="conversation-item" key={conversationItem.id}>
-                    <div className={`speaker ${conversationItem.role || ''}`}>
-                      <div>
-                        {(
-                          conversationItem.role || conversationItem.type
-                        ).replaceAll('_', ' ')}
-                      </div>
-                      <div
-                        className="close"
-                        onClick={() =>
-                          deleteConversationItem(conversationItem.id)
-                        }
-                      >
-                        <X />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div> */}
-          {/* </div> */}
           <div className="content-actions">
             <Button
               label={isConnected ? 'disconnect' : 'connect'}
@@ -535,7 +508,7 @@ export function ConsolePage() {
             />
           </div>
         </div>
-        <input
+        {/* <input
           type="file"
           accept="image/*"
           multiple
@@ -545,7 +518,7 @@ export function ConsolePage() {
         />
         <label htmlFor="image-upload" className="upload-button">
           Choose Images
-        </label>
+        </label> */}
       </div>
     </div>
   );
