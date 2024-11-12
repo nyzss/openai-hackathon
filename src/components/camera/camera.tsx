@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import Webcam from 'react-webcam';
 
-const videoConstraints = {
-  width: 1280,
-  height: 720,
-  facingMode: 'user',
-};
+// const videoConstraints = {
+//   width: 1280,
+//   height: 720,
+//   facingMode: 'user',
+// };
 
 export const WebcamComponent = () => {
   const webcamRef = React.useRef<Webcam | null>(null);
@@ -22,19 +22,26 @@ export const WebcamComponent = () => {
     }
   }, [webcamRef]);
   return (
-    <div>
-      <Webcam
-        audio={false}
-        height={720}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        width={1280}
-        videoConstraints={videoConstraints}
-        mirrored={true}
-      />
-      <button onClick={capture}>Capture photo</button>
-
-      {rawData && <img src={rawData} alt="mon image wsh" />}
+    <div className="flex space-x-5">
+      <div className="flex flex-col space-y-4 mb-4  max-w-xl ">
+        <Webcam
+          audio={false}
+          // height={720}
+          ref={webcamRef}
+          screenshotFormat="image/jpeg"
+          // width={1280}
+          // videoConstraints={videoConstraints}
+          mirrored={true}
+        />
+        {/* make better styles for the button */}
+        <button
+          className="bg-blue-500 hover:bg-blue-600 text-gray-200 p-3 rounded-md font-bold text-xl mx-auto"
+          onClick={capture}
+        >
+          Capture
+        </button>
+      </div>
+      <div>{rawData && <img src={rawData} alt="mon image wsh" />}</div>
     </div>
   );
 };
