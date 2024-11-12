@@ -133,6 +133,8 @@ export function ConsolePage() {
   });
   const [marker, setMarker] = useState<Coordinates | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<typeof ArtPieceInfo> | null>(null);
+
 
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -182,6 +184,8 @@ export function ConsolePage() {
               response_format: zodResponseFormat(ArtPieceInfo, "event"),
   });
   console.log(completion.choices[0].message.parsed);
+  setCurrentArtInfo(completion.choices[0].message.parsed);
+  connectConversation(completion.choices[0].message.parsed!);
 }
     }
   };
@@ -222,7 +226,7 @@ export function ConsolePage() {
    * Connect to conversation:
    * WavRecorder taks speech input, WavStreamPlayer output, client is API client
    */
-  const connectConversation = useCallback(async () => {
+  const connectConversation = useCallback(async (ArtInfo?: z.infer<typeof ArtPieceInfo>) => {
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
@@ -241,18 +245,32 @@ export function ConsolePage() {
 
     // Connect to realtime API
     await client.connect();
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: `Hello!`,
-        // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-      },
-    ]);
+
+    if (ArtInfo) {
+      const initialMessage = `This is ${ArtInfo.artist ? `by ${ArtInfo.artist}` : 'an artwork'}, ${
+        ArtInfo.name ? `called "${ArtInfo.name}"` : ''
+      }. It is ${ArtInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'}. What would you like to know about it?`;
+
+      client.sendUserMessageContent([
+        {
+          type: 'input_text',
+          text: initialMessage,
+        },
+      ]);
+    }
+
+    // client.sendUserMessageContent([
+    //   {
+    //     type: `input_text`,
+    //     // text: `Hello!`,
+    //     text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
+    //   },
+    // ]);
 
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
-  }, []);
+  }, [currentArtInfo]);
 
   /**
    * Disconnect and reset conversation state
@@ -745,9 +763,9 @@ export function ConsolePage() {
               iconPosition={isConnected ? 'end' : 'start'}
               icon={isConnected ? X : Zap}
               buttonStyle={isConnected ? 'regular' : 'action'}
-              onClick={
-                isConnected ? disconnectConversation : connectConversation
-              }
+              // onClick={
+              //   isConnected ? disconnectConversation : connectConversation
+              // }
             />
           </div>
         </div>
