@@ -21,27 +21,9 @@ import { WavRenderer } from '../utils/wav_renderer';
 
 import { X, Zap } from 'react-feather';
 import { Button } from '../components/button/Button';
-import { Toggle } from '../components/toggle/Toggle';
 
 import './ConsolePage.scss';
 import { WebcamComponent } from '../components/camera/camera';
-
-/**
- * Type for result from get_weather() function call
- */
-interface Coordinates {
-  lat: number;
-  lng: number;
-  location?: string;
-  temperature?: {
-    value: number;
-    units: string;
-  };
-  wind_speed?: {
-    value: number;
-    units: string;
-  };
-}
 
 /**
  * Type for all event logs
@@ -98,8 +80,6 @@ export function ConsolePage() {
    */
   const clientCanvasRef = useRef<HTMLCanvasElement>(null);
   const serverCanvasRef = useRef<HTMLCanvasElement>(null);
-  const eventsScrollHeightRef = useRef(0);
-  const eventsScrollRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<string>(new Date().toISOString());
 
   /**
@@ -110,10 +90,7 @@ export function ConsolePage() {
    * - coords, marker are for get_weather() function
    */
   const [items, setItems] = useState<ItemType[]>([]);
-  const [realtimeEvents, setRealtimeEvents] = useState<RealtimeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [canPushToTalk, setCanPushToTalk] = useState(true);
-  const [isRecording, setIsRecording] = useState(false);
 
   /**
    * When you click the API key
@@ -139,7 +116,6 @@ export function ConsolePage() {
     // Set state variables
     startTimeRef.current = new Date().toISOString();
     setIsConnected(true);
-    setRealtimeEvents([]);
     setItems(client.conversation.getItems());
 
     // Connect to microphone
@@ -168,7 +144,6 @@ export function ConsolePage() {
    */
   const disconnectConversation = useCallback(async () => {
     setIsConnected(false);
-    setRealtimeEvents([]);
     setItems([]);
 
     const client = clientRef.current;
@@ -187,34 +162,6 @@ export function ConsolePage() {
   }, []);
 
   /**
-   * In push-to-talk mode, start recording
-   * .appendInputAudio() for each sample
-   */
-  const startRecording = async () => {
-    setIsRecording(true);
-    const client = clientRef.current;
-    const wavRecorder = wavRecorderRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-    const trackSampleOffset = await wavStreamPlayer.interrupt();
-    if (trackSampleOffset?.trackId) {
-      const { trackId, offset } = trackSampleOffset;
-      await client.cancelResponse(trackId, offset);
-    }
-    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-  };
-
-  /**
-   * In push-to-talk mode, stop recording
-   */
-  const stopRecording = async () => {
-    setIsRecording(false);
-    const client = clientRef.current;
-    const wavRecorder = wavRecorderRef.current;
-    await wavRecorder.pause();
-    client.createResponse();
-  };
-
-  /**
    * Switch between Manual <> VAD mode for communication
    */
   const changeTurnEndType = async (value: string) => {
@@ -229,23 +176,11 @@ export function ConsolePage() {
     if (value === 'server_vad' && client.isConnected()) {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
-    setCanPushToTalk(value === 'none');
   };
 
-  /**
-   * Auto-scroll the event logs
-   */
   useEffect(() => {
-    if (eventsScrollRef.current) {
-      const eventsEl = eventsScrollRef.current;
-      const scrollHeight = eventsEl.scrollHeight;
-      // Only scroll if height has just changed
-      if (scrollHeight !== eventsScrollHeightRef.current) {
-        eventsEl.scrollTop = scrollHeight;
-        eventsScrollHeightRef.current = scrollHeight;
-      }
-    }
-  }, [realtimeEvents]);
+    changeTurnEndType('server_vad');
+  }, []);
 
   /**
    * Auto-scroll the conversation logs
@@ -347,48 +282,57 @@ export function ConsolePage() {
     // Add tools
     client.addTool(
       {
-        name: 'set_memory',
-        description: 'Saves important data about the user into memory.',
+        name: 'get_artwork_image_from_camera',
+        description:
+          "Get an image of the artwork from the camera, takes a picture of the artpiece that is viewed on the camera, for now it's on debug mode",
+        parameters: {
+          // properties: {
+          //   key: {
+          //     type: 'string',
+          //     description:
+          //       'The key of the memory value. Always use lowercase and underscores, no other characters.',
+          //   },
+          //   value: {
+          //     type: 'string',
+          //     description: 'Value can be anything represented as a string',
+          //   },
+          // },
+          // required: ['key', 'value'],
+        },
+      },
+      async () => {
+        console.log('artwork is called');
+      }
+    );
+    client.addTool(
+      {
+        name: 'get_weather',
+        description:
+          'Retrieves the weather for a given lat, lng coordinate pair. Specify a label for the location.',
         parameters: {
           type: 'object',
           properties: {
-            key: {
-              type: 'string',
-              description:
-                'The key of the memory value. Always use lowercase and underscores, no other characters.',
+            lat: {
+              type: 'number',
+              description: 'Latitude',
             },
-            value: {
+            lng: {
+              type: 'number',
+              description: 'Longitude',
+            },
+            location: {
               type: 'string',
-              description: 'Value can be anything represented as a string',
+              description: 'Name of the location',
             },
           },
-          required: ['key', 'value'],
+          required: ['lat', 'lng', 'location'],
         },
       },
-      async ({ key, value }: { [key: string]: any }) => {
-        //TODO: CALL FUNCTION HERE
-        // setMemoryKv((memoryKv) => {
-        //   const newKv = { ...memoryKv };
-        //   newKv[key] = value;
-        //   return newKv;
-        // });
-        return { ok: true };
+      async ({ lat, lng, location }: { [key: string]: any }) => {
+        return 'hello world';
       }
     );
 
-    // handle realtime events from client + server for event logging
-    client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
-      setRealtimeEvents((realtimeEvents) => {
-        const lastEvent = realtimeEvents[realtimeEvents.length - 1];
-        if (lastEvent?.event.type === realtimeEvent.event.type) {
-          // if we receive multiple events in a row, aggregate them for display purposes
-          lastEvent.count = (lastEvent.count || 0) + 1;
-          return realtimeEvents.slice(0, -1).concat(lastEvent);
-        } else {
-          return realtimeEvents.concat(realtimeEvent);
-        }
-      });
-    });
     client.on('error', (event: any) => console.error(event));
     client.on('conversation.interrupted', async () => {
       const trackSampleOffset = await wavStreamPlayer.interrupt();
@@ -437,7 +381,7 @@ export function ConsolePage() {
             <div className="content-block-title text-6xl">events</div>
             <WebcamComponent />
           </div>
-          <div className="content-block conversation">
+          {/* <div className="content-block conversation">
             <div className="content-block-title">conversation</div>
             <div className="content-block-body" data-conversation-content>
               {!items.length && `awaiting connection...`}
@@ -459,66 +403,12 @@ export function ConsolePage() {
                         <X />
                       </div>
                     </div>
-                    <div className={`speaker-content`}>
-                      {/* tool response */}
-                      {conversationItem.type === 'function_call_output' && (
-                        <div>{conversationItem.formatted.output}</div>
-                      )}
-                      {/* tool call */}
-                      {!!conversationItem.formatted.tool && (
-                        <div>
-                          {conversationItem.formatted.tool.name}(
-                          {conversationItem.formatted.tool.arguments})
-                        </div>
-                      )}
-                      {!conversationItem.formatted.tool &&
-                        conversationItem.role === 'user' && (
-                          <div>
-                            {conversationItem.formatted.transcript ||
-                              (conversationItem.formatted.audio?.length
-                                ? '(awaiting transcript)'
-                                : conversationItem.formatted.text ||
-                                  '(item sent)')}
-                          </div>
-                        )}
-                      {!conversationItem.formatted.tool &&
-                        conversationItem.role === 'assistant' && (
-                          <div>
-                            {conversationItem.formatted.transcript ||
-                              conversationItem.formatted.text ||
-                              '(truncated)'}
-                          </div>
-                        )}
-                      {conversationItem.formatted.file && (
-                        <audio
-                          src={conversationItem.formatted.file.url}
-                          controls
-                        />
-                      )}
-                    </div>
                   </div>
                 );
               })}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
           <div className="content-actions">
-            <Toggle
-              defaultValue={false}
-              labels={['manual', 'vad']}
-              values={['none', 'server_vad']}
-              onChange={(_, value) => changeTurnEndType(value)}
-            />
-            <div className="spacer" />
-            {isConnected && canPushToTalk && (
-              <Button
-                label={isRecording ? 'release to send' : 'push to talk'}
-                buttonStyle={isRecording ? 'alert' : 'regular'}
-                disabled={!isConnected || !canPushToTalk}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-              />
-            )}
-            <div className="spacer" />
             <Button
               label={isConnected ? 'disconnect' : 'connect'}
               iconPosition={isConnected ? 'end' : 'start'}
