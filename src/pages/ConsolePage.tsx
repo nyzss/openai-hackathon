@@ -23,6 +23,7 @@ import { X, Edit, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
+import OpenAI from "openai";
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
@@ -52,6 +53,11 @@ interface RealtimeEvent {
   source: 'client' | 'server';
   count?: number;
   event: { [key: string]: any };
+}
+
+interface UploadedImage {
+  url: string;
+  file: File;
 }
 
 export function ConsolePage() {
@@ -124,7 +130,36 @@ export function ConsolePage() {
     lng: -122.418137,
   });
   const [marker, setMarker] = useState<Coordinates | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
+  // Add this handler function
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newImages: UploadedImage[] = Array.from(files).map(file => ({
+        url: URL.createObjectURL(file),
+        file: file
+      }));
+      setUploadedImages(prev => [...prev, ...newImages]);
+    }
+  //   const completion = await openai.chat.completions.create({
+  //     model: "gpt-4o",
+  //     messages: [
+  //         {
+  //             role: "user",
+  //             content: [
+  //                 { type: "text", text: "What's in this image?" },
+  //                 {
+  //                     type: "image_url",
+  //                     image_url: {
+  //                         "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+  //                     },
+  //                 }
+  //             ],
+  //         },
+  //     ],
+  // });
+  };
   /**
    * Utility for formatting the timing of logs
    */
@@ -725,6 +760,17 @@ export function ConsolePage() {
             </div>
           </div>
         </div> */}
+        <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="file-input"
+              id="image-upload"
+            />
+            <label htmlFor="image-upload" className="upload-button">
+              Choose Images
+            </label>
       </div>
     </div>
   );
