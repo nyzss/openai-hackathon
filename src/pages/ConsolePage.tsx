@@ -24,6 +24,8 @@ import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
 import OpenAI from "openai";
+import {z} from "zod";
+import {zodResponseFormat} from "openai/helpers/zod";
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
@@ -132,6 +134,19 @@ export function ConsolePage() {
   const [marker, setMarker] = useState<Coordinates | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
+  const openai = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true
+  });
+
+  const ArtPieceInfo = z.object({
+    name: z.string(),
+    artist: z.string(),
+    artpiece: z.boolean(),
+    type: z.string()
+  });
+
+
   // Add this handler function
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -141,24 +156,34 @@ export function ConsolePage() {
         file: file
       }));
       setUploadedImages(prev => [...prev, ...newImages]);
+      
+      for (const image of newImages) {
+        // Convert the file to base64
+        const base64Image = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(image.file);
+        });
+
+    const completion = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-mini",
+      messages: [
+            { role: "system", content: "You extract email addresses into JSON data." },
+              {role: "user",
+              content: [
+                  { type: "text", text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste" },
+                  {
+                      type: "image_url",
+                      image_url: {
+                          "url": base64Image,
+                      },
+                  }
+              ],},],
+              response_format: zodResponseFormat(ArtPieceInfo, "event"),
+  });
+  console.log(completion.choices[0].message.parsed);
+}
     }
-  //   const completion = await openai.chat.completions.create({
-  //     model: "gpt-4o",
-  //     messages: [
-  //         {
-  //             role: "user",
-  //             content: [
-  //                 { type: "text", text: "What's in this image?" },
-  //                 {
-  //                     type: "image_url",
-  //                     image_url: {
-  //                         "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
-  //                     },
-  //                 }
-  //             ],
-  //         },
-  //     ],
-  // });
   };
   /**
    * Utility for formatting the timing of logs
