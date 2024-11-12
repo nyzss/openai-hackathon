@@ -26,6 +26,7 @@ import { Map } from '../components/Map';
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
+import { WebcamComponent } from '../components/camera/camera.js';
 
 /**
  * Type for result from get_weather() function call
@@ -534,6 +535,7 @@ export function ConsolePage() {
               </div>
             </div>
             <div className="content-block-title text-6xl">events</div>
+            <WebcamComponent />
             {/* <div className="content-block-body" ref={eventsScrollRef}>
               {!realtimeEvents.length && `awaiting connection...`}
               {realtimeEvents.map((realtimeEvent, i) => {
