@@ -19,7 +19,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { Mic, MicOff, X, Zap } from 'react-feather';
+import { Mic, MicOff, Navigation, Navigation2, X, Zap } from 'react-feather';
 import { Button } from '../components/button/Button';
 import OpenAI from 'openai';
 import { z } from 'zod';
@@ -469,73 +469,52 @@ export function ConsolePage() {
   }, []);
 
   return (
-    <div data-component="ConsolePage">
+    <div className="relative w-screen h-screen bg-black">
       <InstructionModal
         isOpen={showInstructions}
         onClose={handleCloseInstructions}
       />
-      <div className="content-main">
-        <div className="content-logs">
-          <div className="content-block events">
-            <div className="visualization">
-              <div className="visualization-entry client">
-                <canvas ref={clientCanvasRef} />
-              </div>
-              <div className="visualization-entry server">
-                <canvas ref={serverCanvasRef} />
-              </div>
-            </div>
-            <div className="text-xl">Welcome to your new museum experience</div>
-            <div className="flex justify-center space-x-5">
-              <div
-                className="flex flex-col items-center"
-                onDoubleClick={changeCameraSide}
-              >
-                <Webcam
-                  audio={false}
-                  ref={webcamRef}
-                  // screenshotFormat="image/jpeg"
-                  //commented for now // height={720}
-                  // width={1280}
-                  videoConstraints={videoConstraints}
-                  mirrored={videoFacing === 'front'}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="content-actions">
-            <Toggle
-              defaultValue={false}
-              labels={['manual', 'vad']}
-              values={['none', 'server_vad']}
-              onChange={(_, value) => changeTurnEndType(value)}
-            />
 
-            {isConnected && canPushToTalk && (
-              <Button
-                label={isRecording ? 'Release to Send' : 'Push to Talk'}
-                icon={isRecording ? MicOff : Mic}
-                iconPosition="start"
-                disabled={!isConnected || !canPushToTalk}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-              />
-            )}
+      <div
+        className="absolute top-0 left-0 w-full h-full"
+        onDoubleClick={changeCameraSide}
+      >
+        <Webcam
+          audio={false}
+          ref={webcamRef}
+          videoConstraints={videoConstraints}
+          mirrored={videoFacing === 'front'}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-            {/* Spacer */}
-            <div className="h-4"></div>
+      <div className="absolute bottom-4 left-0 right-0 flex flex-col sm:flex-row justify-center items-center sm:space-x-4 space-y-4 sm:space-y-0 bg-black bg-opacity-50 p-4 rounded-lg mx-4 transition-all">
+        {!isConnected && (
+          <Toggle
+            defaultValue={false}
+            labels={['manual', 'vad']}
+            values={['none', 'server_vad']}
+            onChange={(_, value) => changeTurnEndType(value)}
+          />
+        )}
 
-            {/* Connect/Disconnect Button */}
-            <Button
-              label={isConnected ? 'Disconnect' : 'Connect'}
-              icon={isConnected ? X : Zap}
-              iconPosition={isConnected ? 'end' : 'start'}
-              onClick={
-                isConnected ? disconnectConversation : connectConversation
-              }
-            />
-          </div>
-        </div>
+        {isConnected && canPushToTalk && (
+          <Button
+            label={isRecording ? 'Release to Send' : 'Push to Talk'}
+            icon={isRecording ? MicOff : Mic}
+            iconPosition="start"
+            disabled={!isConnected || !canPushToTalk}
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+          />
+        )}
+
+        <Button
+          label={isConnected ? 'Disconnect' : 'Guide me'}
+          icon={isConnected ? X : Navigation2}
+          iconPosition={isConnected ? 'end' : 'start'}
+          onClick={isConnected ? disconnectConversation : connectConversation}
+        />
       </div>
     </div>
   );

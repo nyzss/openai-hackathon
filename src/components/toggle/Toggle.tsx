@@ -52,11 +52,11 @@ export const Toggle: React.FC<ToggleProps> = ({
 
   return (
     <div
-      className="relative flex items-center gap-2 cursor-pointer overflow-hidden bg-gray-200 text-gray-900 h-10 rounded-md hover:bg-gray-300 transition-colors duration-100"
+      className="relative flex items-center gap-2 cursor-pointer overflow-hidden bg-gray-800 text-gray-900 h-10 rounded-md hover:bg-gray-700 transition-colors duration-100"
       onClick={toggleValue}
     >
       <div
-        className="absolute top-0 bottom-0 bg-gray-900 z-10 rounded-md transition-all duration-100"
+        className="absolute top-0 bottom-0 bg-black z-10 rounded-md transition-all duration-100"
         ref={bgRef}
       ></div>
 
@@ -64,7 +64,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         <div
           ref={leftRef}
           className={`relative px-4 z-20 select-none transition-colors duration-100 ${
-            isEnabled ? 'text-gray-500' : 'text-white'
+            isEnabled ? 'text-gray-400' : 'text-white'
           }`}
         >
           {labels[0]}
@@ -75,7 +75,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         <div
           ref={rightRef}
           className={`relative px-4 -ml-2 z-20 select-none transition-colors duration-100 ${
-            isEnabled ? 'text-white' : 'text-gray-500'
+            isEnabled ? 'text-white' : 'text-gray-400'
           }`}
         >
           {labels[1]}
