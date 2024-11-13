@@ -94,7 +94,6 @@ export function ConsolePage() {
    */
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<
     typeof ArtPieceInfo
   > | null>(null);
@@ -167,6 +166,8 @@ export function ConsolePage() {
    * Connect to conversation:
    * WavRecorder taks speech input, WavStreamPlayer output, client is API client
    */
+
+  // const connectConversation = useCallback(async () => {
   const connectConversation = useCallback(
     async (ArtInfo?: z.infer<typeof ArtPieceInfo>) => {
       const client = clientRef.current;
@@ -455,8 +456,6 @@ export function ConsolePage() {
               </div>
               <div>{rawData && <img src={rawData} alt="mon image wsh" />}</div>
             </div>
-
-            <WebcamComponent />
           </div>
           <div className="content-actions">
             <Button
