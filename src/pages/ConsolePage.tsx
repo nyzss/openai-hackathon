@@ -100,7 +100,7 @@ export function ConsolePage() {
    * - RealtimeClient (API client)
    */
   const wavRecorderRef = useRef<WavRecorder>(
-    new WavRecorder({ sampleRate: 24000 })
+    new WavRecorder({ sampleRate: 44100 })
   );
   const wavStreamPlayerRef = useRef<WavStreamPlayer>(
     new WavStreamPlayer({ sampleRate: 24000 })
@@ -192,7 +192,11 @@ export function ConsolePage() {
         response_format: zodResponseFormat(ArtPieceInfo, 'event'),
       });
       const artInfo = completion.choices[0].message.parsed!;
-      return artInfo || { ok: false };
+      const enhancedArtInfo = {
+        ...artInfo,
+        accentInfo: `Speak in french with a strong ${artInfo.nationality || 'french' } accent.`,
+      };
+      return enhancedArtInfo || { ok: false };
     }
   };
   /**
