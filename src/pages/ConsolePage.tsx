@@ -118,14 +118,15 @@ export function ConsolePage() {
         messages: [
           {
             role: 'system',
-            content: 'You are an art specialist. You analyze images to determine the type of artwork (sculpture, painting, or photograph), provide its title if known, and identify the artist.',
+            content:
+              'You are an art specialist. You analyze images to determine the type of artwork (sculpture, painting, or photograph), provide its title if known, and identify the artist.',
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: "You are an art specialist. Please tell me if the piece is a sculpture, painting, or photograph. If you know the name of the artwork and artist, as well as their nationality, please provide them.",
+                text: 'You are an art specialist. Please tell me if the piece is a sculpture, painting, or photograph. If you know the name of the artwork and artist, as well as their nationality, please provide them.',
               },
               {
                 type: 'image_url',
@@ -137,9 +138,9 @@ export function ConsolePage() {
           },
         ],
         response_format: zodResponseFormat(ArtPieceInfo, 'event'),
-      });      
+      });
       const artInfo = completion.choices[0].message.parsed!;
-      return artInfo || {ok: false};
+      return artInfo || { ok: false };
     }
   };
   /**
@@ -344,12 +345,11 @@ export function ConsolePage() {
     const client = clientRef.current;
 
     // Set instructions
-    client.updateSession ({
-        instructions: instructions,
-        voice: 'shimmer',
-        input_audio_transcription: { model: 'whisper-1' }
-      }
-    );
+    client.updateSession({
+      instructions: instructions,
+      voice: 'shimmer',
+      input_audio_transcription: { model: 'whisper-1' },
+    });
 
     // Add tools
     client.addTool(
@@ -362,11 +362,11 @@ export function ConsolePage() {
       async () => {
         if (webcamRef.current) {
           const imageSrc = webcamRef.current.getScreenshot();
-      
+
           if (imageSrc) {
             return getArtworkInfo(imageSrc);
           } else {
-            return {ok: false};
+            return { ok: false };
           }
         }
       }
@@ -401,25 +401,11 @@ export function ConsolePage() {
     setItems(client.conversation.getItems());
 
     return () => {
-      // cleanup; resets to defaults
       client.reset();
     };
   }, []);
 
   const webcamRef = useRef<Webcam | null>(null);
-
-  const [rawData, setRawData] = useState('');
-
-  const capture = useCallback(() => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-
-      if (imageSrc != null) {
-        // setRawData(imageSrc);
-        getArtworkInfo(imageSrc);
-      }
-    }
-  }, [webcamRef]);
 
   return (
     <div data-component="ConsolePage">
@@ -434,28 +420,20 @@ export function ConsolePage() {
                 <canvas ref={serverCanvasRef} />
               </div>
             </div>
-            <div className="content-block-title text-6xl">Welcome to your new museum experience</div>
+            <div className="text-xl">Welcome to your new museum experience</div>
             <div className="flex justify-center space-x-5">
               <div className="flex flex-col items-center">
                 <Webcam
                   audio={false}
-                  // height={720}
                   ref={webcamRef}
                   screenshotFormat="image/jpeg"
+                  //commented for now
+                  // height={720}
                   // width={1280}
                   // videoConstraints={videoConstraints}
                   mirrored={true}
                 />
-                {/* make better styles for the button */}
-                {/* <Button
-                  className="bg-blue-500 hover:bg-blue-600 text-gray-200 p-3 rounded-md font-bold text-xl mx-auto"
-                  label='Capture'
-                  onClick={capture}
-                >
-                  Capture
-                </Button> */}
               </div>
-              <div>{rawData && <img src={rawData} alt="mon image wsh" />}</div>
             </div>
           </div>
           <div className="content-actions">
@@ -486,17 +464,6 @@ export function ConsolePage() {
             />
           </div>
         </div>
-        {/* <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={getArtworkInfo}
-          className="file-input"
-          id="image-upload"
-        />
-        <label htmlFor="image-upload" className="upload-button">
-          Choose Images
-        </label> */}
       </div>
     </div>
   );
