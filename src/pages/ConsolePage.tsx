@@ -96,9 +96,6 @@ export function ConsolePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<
-    typeof ArtPieceInfo
-  > | null>(null);
 
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -110,6 +107,7 @@ export function ConsolePage() {
     artist: z.string(),
     artpiece: z.boolean(),
     type: z.string(),
+    nationality: z.string(),
   });
 
   const getArtworkInfo = async (data: string) => {
@@ -127,7 +125,7 @@ export function ConsolePage() {
             content: [
               {
                 type: 'text',
-                text: "You are an art specialist. Please tell me if the piece is a sculpture, painting, or photograph. If you know the name of the artwork and artist, please provide them.",
+                text: "You are an art specialist. Please tell me if the piece is a sculpture, painting, or photograph. If you know the name of the artwork and artist, as well as their nationality, please provide them.",
               },
               {
                 type: 'image_url',
@@ -140,8 +138,6 @@ export function ConsolePage() {
         ],
         response_format: zodResponseFormat(ArtPieceInfo, 'event'),
       });      
-      setCurrentArtInfo(completion.choices[0].message.parsed);
-
       const artInfo = completion.choices[0].message.parsed!;
       return artInfo || {ok: false};
     }
@@ -185,7 +181,7 @@ export function ConsolePage() {
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
-  }, [currentArtInfo]);
+  }, []);
 
   /**
    * Disconnect and reset conversation state
