@@ -33,6 +33,52 @@ import { Toggle } from '../components/toggle/Toggle';
  * Type for all event logs
  */
 
+interface InstructionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function InstructionModal({ isOpen, onClose }: InstructionModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg max-w-2xl">
+        <h2 className="text-2xl font-bold mb-4">
+          Welcome to the Museum Experience!
+        </h2>
+        <div className="space-y-4">
+          <p>Here's how to use this interactive guide:</p>
+          <ol className="list-decimal list-inside space-y-2">
+            <li>Click the "Connect" button to start your experience</li>
+            <li>Point your camera at any artwork you'd like to learn about</li>
+            <li>
+              Choose between two modes of interaction:
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>
+                  <strong>Manual:</strong> Press and hold the "Push to talk"
+                  button while speaking
+                </li>
+                <li>
+                  <strong>VAD:</strong> Automatic voice detection - just speak
+                  naturally
+                </li>
+              </ul>
+            </li>
+            <li>Ask questions about the artwork and get detailed responses!</li>
+          </ol>
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-6 px-4 py-2 bg-black text-white rounded hover:bg-black"
+        >
+          Got it!
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ConsolePage() {
   /**
    * Ask user for API Key
@@ -91,6 +137,7 @@ export function ConsolePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -418,8 +465,26 @@ export function ConsolePage() {
 
   const webcamRef = useRef<Webcam | null>(null);
 
+  useEffect(() => {
+    const hasSeenInstructions = localStorage.getItem(
+      'museum::has_seen_instructions'
+    );
+    if (!hasSeenInstructions) {
+      setShowInstructions(true);
+    }
+  }, []);
+
+  const handleCloseInstructions = useCallback(() => {
+    setShowInstructions(false);
+    localStorage.setItem('museum::has_seen_instructions', 'true');
+  }, []);
+
   return (
     <div data-component="ConsolePage">
+      <InstructionModal
+        isOpen={showInstructions}
+        onClose={handleCloseInstructions}
+      />
       <div className="content-main">
         <div className="content-logs">
           <div className="content-block events">
