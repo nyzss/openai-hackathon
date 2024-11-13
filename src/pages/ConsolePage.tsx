@@ -469,12 +469,61 @@ export function ConsolePage() {
   }, []);
 
   return (
-    <div className="relative w-screen h-screen bg-black">
+    // <div className="w-screen h-screen bg-black">
+    //   <InstructionModal
+    //     isOpen={showInstructions}
+    //     onClose={handleCloseInstructions}
+    //   />
+
+    //   <div
+    //     className="absolute top-0 left-0 w-full h-full"
+    //     onDoubleClick={changeCameraSide}
+    //   >
+    //     <Webcam
+    //       audio={false}
+    //       ref={webcamRef}
+    //       videoConstraints={videoConstraints}
+    //       mirrored={videoFacing === 'front'}
+    //       className="w-full h-full object-cover"
+    //     />
+    //   </div>
+
+    //   <div className="absolute bottom-4 left-0 right-0 flex flex-col sm:flex-row justify-center items-center sm:space-x-4 space-y-4 sm:space-y-0 bg-black bg-opacity-50 p-4 rounded-lg mx-4 transition-all">
+    //     {!isConnected && (
+    //       <Toggle
+    //         defaultValue={false}
+    //         labels={['Push to talk', 'Voice Detection']}
+    //         values={['none', 'server_vad']}
+    //         onChange={(_, value) => changeTurnEndType(value)}
+    //       />
+    //     )}
+    //     {isConnected && canPushToTalk && (
+    //       <Button
+    //         label={isRecording ? 'Release to Send' : 'Push to Talk'}
+    //         icon={isRecording ? MicOff : Mic}
+    //         iconPosition="start"
+    //         disabled={!isConnected || !canPushToTalk}
+    //         onMouseDown={startRecording}
+    //         onMouseUp={stopRecording}
+    //       />
+    //     )}
+    //     <Button
+    //       label={isConnected ? 'Disconnect' : 'Guide me'}
+    //       icon={isConnected ? X : Navigation2}
+    //       iconPosition={isConnected ? 'end' : 'start'}
+    //       onClick={isConnected ? disconnectConversation : connectConversation}
+    //     />
+    //   </div>
+    // </div>
+
+    <div
+      className="relative w-screen h-screen bg-black overflow-hidden"
+      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+    >
       <InstructionModal
         isOpen={showInstructions}
         onClose={handleCloseInstructions}
       />
-
       <div
         className="absolute top-0 left-0 w-full h-full"
         onDoubleClick={changeCameraSide}
@@ -488,13 +537,14 @@ export function ConsolePage() {
         />
       </div>
 
-      <div className="absolute bottom-4 left-0 right-0 flex flex-col sm:flex-row justify-center items-center sm:space-x-4 space-y-4 sm:space-y-0 bg-black bg-opacity-50 p-4 rounded-lg mx-4 transition-all">
+      <div className="absolute bottom-2 left-0 right-0 z-10 flex flex-col sm:flex-row justify-center items-center sm:space-x-4 space-y-2 sm:space-y-0 bg-black bg-opacity-50 p-2 sm:p-4 rounded-lg mx-2 sm:mx-4 transition-all">
         {!isConnected && (
           <Toggle
             defaultValue={false}
-            labels={['manual', 'vad']}
+            labels={['Push to talk', 'Voice Detection']}
             values={['none', 'server_vad']}
             onChange={(_, value) => changeTurnEndType(value)}
+            // className="text-white w-full sm:w-auto"
           />
         )}
 
@@ -506,6 +556,7 @@ export function ConsolePage() {
             disabled={!isConnected || !canPushToTalk}
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
+            className="text-white border border-gray-300 hover:bg-gray-700 w-full sm:w-auto text-sm sm:text-base px-3 py-2 rounded"
           />
         )}
 
@@ -514,6 +565,7 @@ export function ConsolePage() {
           icon={isConnected ? X : Navigation2}
           iconPosition={isConnected ? 'end' : 'start'}
           onClick={isConnected ? disconnectConversation : connectConversation}
+          className="text-white border border-gray-300 hover:bg-gray-700 w-full sm:w-auto text-sm sm:text-base px-3 py-2 rounded"
         />
       </div>
     </div>
