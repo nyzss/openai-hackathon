@@ -360,56 +360,18 @@ export function ConsolePage() {
     // Add tools
     client.addTool(
       {
-        name: 'get_artwork_image_from_camera',
+        name: 'get_seen_data',
         description:
-          "Get an image of the artwork from the camera, takes a picture of the artpiece that is viewed on the camera, for now it's on debug mode",
-        parameters: {
-          // properties: {
-          //   key: {
-          //     type: 'string',
-          //     description:
-          //       'The key of the memory value. Always use lowercase and underscores, no other characters.',
-          //   },
-          //   value: {
-          //     type: 'string',
-          //     description: 'Value can be anything represented as a string',
-          //   },
-          // },
-          // required: ['key', 'value'],
-        },
+          'Gets important data about what the user has in front of him, describes an artwork. This artwork in front of the user changes every time.',
+        parameters: {},
       },
       async () => {
-        console.log('artwork is called');
+        console.log('Test');
+        return { title: 'La Joconde', artist: 'Léonard de Vinci' };
       }
     );
-    client.addTool(
-      {
-        name: 'get_weather',
-        description:
-          'Retrieves the weather for a given lat, lng coordinate pair. Specify a label for the location.',
-        parameters: {
-          type: 'object',
-          properties: {
-            lat: {
-              type: 'number',
-              description: 'Latitude',
-            },
-            lng: {
-              type: 'number',
-              description: 'Longitude',
-            },
-            location: {
-              type: 'string',
-              description: 'Name of the location',
-            },
-          },
-          required: ['lat', 'lng', 'location'],
-        },
-      },
-      async ({ lat, lng, location }: { [key: string]: any }) => {
-        return 'hello world';
-      }
-    );
+
+    // handle realtime events from client + server for event logging
 
     client.on('error', (event: any) => console.error(event));
     client.on('conversation.interrupted', async () => {
