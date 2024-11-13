@@ -434,9 +434,9 @@ export function ConsolePage() {
                 <canvas ref={serverCanvasRef} />
               </div>
             </div>
-            <div className="content-block-title text-6xl">events</div>
-            <div className="flex space-x-5">
-              <div className="flex flex-col space-y-4 mb-4  max-w-xl ">
+            <div className="content-block-title text-6xl">Welcome to your new museum experience</div>
+            <div className="flex justify-center space-x-5">
+              <div className="flex flex-col items-center">
                 <Webcam
                   audio={false}
                   // height={720}
@@ -447,12 +447,13 @@ export function ConsolePage() {
                   mirrored={true}
                 />
                 {/* make better styles for the button */}
-                <button
+                {/* <Button
                   className="bg-blue-500 hover:bg-blue-600 text-gray-200 p-3 rounded-md font-bold text-xl mx-auto"
+                  label='Capture'
                   onClick={capture}
                 >
                   Capture
-                </button>
+                </Button> */}
               </div>
               <div>{rawData && <img src={rawData} alt="mon image wsh" />}</div>
             </div>
