@@ -97,9 +97,6 @@ export function ConsolePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<
-    typeof ArtPieceInfo
-  > | null>(null);
 
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -111,6 +108,7 @@ export function ConsolePage() {
     artist: z.string(),
     artpiece: z.boolean(),
     type: z.string(),
+    nationality: z.string(),
   });
 
   // Add this handler function
@@ -137,7 +135,7 @@ export function ConsolePage() {
             content: [
               {
                 type: 'text',
-                text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste",
+                text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste, et la nationalité de l'artiste",
               },
               {
                 type: 'image_url',
@@ -151,16 +149,14 @@ export function ConsolePage() {
         response_format: zodResponseFormat(ArtPieceInfo, 'event'),
       });
       console.log(completion.choices[0].message.parsed);
-      setCurrentArtInfo(completion.choices[0].message.parsed);
 
       // do the send here
       const artInfo = completion.choices[0].message.parsed!;
+
       if (artInfo) {
         const initialMessage = `This is ${
           artInfo.artist ? `by ${artInfo.artist}` : 'an artwork'
-        }, ${artInfo.name ? `called "${artInfo.name}"` : ''}. It is ${
-          artInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
-        }. What would you like to know about it?`;
+        }, ${artInfo.name ? `called "${artInfo.name}"` : ''} and take the accent ${artInfo.nationality}, the language is always english but the accent is ${artInfo.nationality}.`;
 
         // if (isConnected) {
         console.log('INITIAL_MESSAGE: ', initialMessage);
@@ -231,7 +227,7 @@ export function ConsolePage() {
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
-  }, [currentArtInfo]);
+  }, []);
 
   /**
    * Disconnect and reset conversation state
