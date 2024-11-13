@@ -29,6 +29,7 @@ import './ConsolePage.scss';
 import { WebcamComponent } from '../components/camera/camera';
 
 import Webcam from 'react-webcam';
+import { Toggle } from '../components/toggle/Toggle';
 /**
  * Type for all event logs
  */
@@ -92,8 +93,10 @@ export function ConsolePage() {
    * - memoryKv is for set_memory() function
    * - coords, marker are for get_weather() function
    */
+  const [canPushToTalk, setCanPushToTalk] = useState(true);
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [currentArtInfo, setCurrentArtInfo] = useState<z.infer<
     typeof ArtPieceInfo
   > | null>(null);
@@ -119,6 +122,8 @@ export function ConsolePage() {
     const files = data;
     if (files) {
       // Convert the file to base64
+
+      const client = clientRef.current;
 
       const completion = await openai.beta.chat.completions.parse({
         model: 'gpt-4o-mini',
@@ -147,7 +152,28 @@ export function ConsolePage() {
       });
       console.log(completion.choices[0].message.parsed);
       setCurrentArtInfo(completion.choices[0].message.parsed);
-      connectConversation(completion.choices[0].message.parsed!);
+
+      // do the send here
+      const artInfo = completion.choices[0].message.parsed!;
+      if (artInfo) {
+        const initialMessage = `This is ${
+          artInfo.artist ? `by ${artInfo.artist}` : 'an artwork'
+        }, ${artInfo.name ? `called "${artInfo.name}"` : ''}. It is ${
+          artInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
+        }. What would you like to know about it?`;
+
+        // if (isConnected) {
+        console.log('INITIAL_MESSAGE: ', initialMessage);
+        client.sendUserMessageContent([
+          {
+            type: 'input_text',
+            text: initialMessage,
+          },
+        ]);
+        // }
+      }
+
+      // connectConversation();
     }
   };
   /**
@@ -168,55 +194,44 @@ export function ConsolePage() {
    */
 
   // const connectConversation = useCallback(async () => {
-  const connectConversation = useCallback(
-    async (ArtInfo?: z.infer<typeof ArtPieceInfo>) => {
-      const client = clientRef.current;
-      const wavRecorder = wavRecorderRef.current;
-      const wavStreamPlayer = wavStreamPlayerRef.current;
+  const connectConversation = useCallback(async () => {
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
 
-      // Set state variables
-      startTimeRef.current = new Date().toISOString();
-      setIsConnected(true);
-      setItems(client.conversation.getItems());
+    // Set state variables
+    startTimeRef.current = new Date().toISOString();
+    setIsConnected(true);
+    setItems(client.conversation.getItems());
 
-      // Connect to microphone
-      await wavRecorder.begin();
+    // Connect to microphone
+    await wavRecorder.begin();
 
-      // Connect to audio output
-      await wavStreamPlayer.connect();
+    // Connect to audio output
+    await wavStreamPlayer.connect();
 
-      // Connect to realtime API
-      await client.connect();
+    // Connect to realtime API
+    await client.connect();
 
-      if (ArtInfo) {
-        const initialMessage = `This is ${
-          ArtInfo.artist ? `by ${ArtInfo.artist}` : 'an artwork'
-        }, ${ArtInfo.name ? `called "${ArtInfo.name}"` : ''}. It is ${
-          ArtInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
-        }. What would you like to know about it?`;
+    // if (ArtInfo) {
+    //   const initialMessage = `This is ${
+    //     ArtInfo.artist ? `by ${ArtInfo.artist}` : 'an artwork'
+    //   }, ${ArtInfo.name ? `called "${ArtInfo.name}"` : ''}. It is ${
+    //     ArtInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
+    //   }. What would you like to know about it?`;
 
-        client.sendUserMessageContent([
-          {
-            type: 'input_text',
-            text: initialMessage,
-          },
-        ]);
-      }
+    //   client.sendUserMessageContent([
+    //     {
+    //       type: 'input_text',
+    //       text: initialMessage,
+    //     },
+    //   ]);
+    // }
 
-      // client.sendUserMessageContent([
-      //   {
-      //     type: `input_text`,
-      //     // text: `Hello!`,
-      //     text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-      //   },
-      // ]);
-
-      if (client.getTurnDetectionType() === 'server_vad') {
-        await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-      }
-    },
-    [currentArtInfo]
-  );
+    if (client.getTurnDetectionType() === 'server_vad') {
+      await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+    }
+  }, [currentArtInfo]);
 
   /**
    * Disconnect and reset conversation state
@@ -240,6 +255,30 @@ export function ConsolePage() {
     client.deleteItem(id);
   }, []);
 
+  const startRecording = async () => {
+    setIsRecording(true);
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
+    const trackSampleOffset = await wavStreamPlayer.interrupt();
+    if (trackSampleOffset?.trackId) {
+      const { trackId, offset } = trackSampleOffset;
+      await client.cancelResponse(trackId, offset);
+    }
+    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+  };
+
+  /**
+   * In push-to-talk mode, stop recording
+   */
+  const stopRecording = async () => {
+    setIsRecording(false);
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    await wavRecorder.pause();
+    client.createResponse();
+  };
+
   /**
    * Switch between Manual <> VAD mode for communication
    */
@@ -255,11 +294,12 @@ export function ConsolePage() {
     if (value === 'server_vad' && client.isConnected()) {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
+    setCanPushToTalk(value === 'none');
   };
 
-  useEffect(() => {
-    changeTurnEndType('server_vad');
-  }, []);
+  // useEffect(() => {
+  //   changeTurnEndType('server_vad');
+  // }, []);
 
   /**
    * Auto-scroll the conversation logs
@@ -458,14 +498,30 @@ export function ConsolePage() {
             </div>
           </div>
           <div className="content-actions">
+            <Toggle
+              defaultValue={false}
+              labels={['manual', 'vad']}
+              values={['none', 'server_vad']}
+              onChange={(_, value) => changeTurnEndType(value)}
+            />
+            {isConnected && canPushToTalk && (
+              <Button
+                label={isRecording ? 'release to send' : 'push to talk'}
+                buttonStyle={isRecording ? 'alert' : 'regular'}
+                disabled={!isConnected || !canPushToTalk}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+              />
+            )}
+            <div className="spacer" />
             <Button
               label={isConnected ? 'disconnect' : 'connect'}
               iconPosition={isConnected ? 'end' : 'start'}
               icon={isConnected ? X : Zap}
               buttonStyle={isConnected ? 'regular' : 'action'}
-              // onClick={
-              //   isConnected ? disconnectConversation : connectConversation
-              // }
+              onClick={
+                isConnected ? disconnectConversation : connectConversation
+              }
             />
           </div>
         </div>
