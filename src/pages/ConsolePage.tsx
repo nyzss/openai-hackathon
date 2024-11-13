@@ -26,7 +26,6 @@ import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 
 import './ConsolePage.scss';
-import { WebcamComponent } from '../components/camera/camera';
 
 import Webcam from 'react-webcam';
 import { Toggle } from '../components/toggle/Toggle';
@@ -113,31 +112,22 @@ export function ConsolePage() {
     type: z.string(),
   });
 
-  // Add this handler function
-
-  // const handleImageUpload = async (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  const handleImageUpload = async (data: string) => {
+  const getArtworkInfo = async (data: string) => {
     const files = data;
     if (files) {
-      // Convert the file to base64
-
-      const client = clientRef.current;
-
       const completion = await openai.beta.chat.completions.parse({
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You extract email addresses into JSON data.',
+            content: 'You are an art specialist. You analyze images to determine the type of artwork (sculpture, painting, or photograph), provide its title if known, and identify the artist.',
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: "Tu es un specialiste d'art, dis moi s'il s'agit d'une sculture, d'une peinture ou d'une photo et si tu connais le nom donne le, et le nom d'artiste",
+                text: "You are an art specialist. Please tell me if the piece is a sculpture, painting, or photograph. If you know the name of the artwork and artist, please provide them.",
               },
               {
                 type: 'image_url',
@@ -149,31 +139,11 @@ export function ConsolePage() {
           },
         ],
         response_format: zodResponseFormat(ArtPieceInfo, 'event'),
-      });
-      console.log(completion.choices[0].message.parsed);
+      });      
       setCurrentArtInfo(completion.choices[0].message.parsed);
 
-      // do the send here
       const artInfo = completion.choices[0].message.parsed!;
-      if (artInfo) {
-        const initialMessage = `This is ${
-          artInfo.artist ? `by ${artInfo.artist}` : 'an artwork'
-        }, ${artInfo.name ? `called "${artInfo.name}"` : ''}. It is ${
-          artInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
-        }. What would you like to know about it?`;
-
-        // if (isConnected) {
-        console.log('INITIAL_MESSAGE: ', initialMessage);
-        client.sendUserMessageContent([
-          {
-            type: 'input_text',
-            text: initialMessage,
-          },
-        ]);
-        // }
-      }
-
-      // connectConversation();
+      return artInfo || {ok: false};
     }
   };
   /**
@@ -193,7 +163,6 @@ export function ConsolePage() {
    * WavRecorder taks speech input, WavStreamPlayer output, client is API client
    */
 
-  // const connectConversation = useCallback(async () => {
   const connectConversation = useCallback(async () => {
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
@@ -212,21 +181,6 @@ export function ConsolePage() {
 
     // Connect to realtime API
     await client.connect();
-
-    // if (ArtInfo) {
-    //   const initialMessage = `This is ${
-    //     ArtInfo.artist ? `by ${ArtInfo.artist}` : 'an artwork'
-    //   }, ${ArtInfo.name ? `called "${ArtInfo.name}"` : ''}. It is ${
-    //     ArtInfo.artpiece ? 'an original artpiece' : 'not an original artpiece'
-    //   }. What would you like to know about it?`;
-
-    //   client.sendUserMessageContent([
-    //     {
-    //       type: 'input_text',
-    //       text: initialMessage,
-    //     },
-    //   ]);
-    // }
 
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
@@ -394,16 +348,12 @@ export function ConsolePage() {
     const client = clientRef.current;
 
     // Set instructions
-    client.updateSession({ instructions: instructions });
-    // Set transcription, otherwise we don't get user transcriptions back
-    client.updateSession({
-      input_audio_transcription: {
-        model: 'gpt-4o-realtime-preview' as any,
-      },
-    });
-
-    client.updateSession({ voice: 'coral' } as any);
-    // client.updateSession({ turn_detection: 'server_vad' });
+    client.updateSession ({
+        instructions: instructions,
+        voice: 'shimmer',
+        input_audio_transcription: { model: 'whisper-1' }
+      }
+    );
 
     // Add tools
     client.addTool(
@@ -414,8 +364,15 @@ export function ConsolePage() {
         parameters: {},
       },
       async () => {
-        console.log('Test');
-        return { title: 'La Joconde', artist: 'Léonard de Vinci' };
+        if (webcamRef.current) {
+          const imageSrc = webcamRef.current.getScreenshot();
+      
+          if (imageSrc) {
+            return getArtworkInfo(imageSrc);
+          } else {
+            return {ok: false};
+          }
+        }
       }
     );
 
@@ -463,7 +420,7 @@ export function ConsolePage() {
 
       if (imageSrc != null) {
         // setRawData(imageSrc);
-        handleImageUpload(imageSrc);
+        getArtworkInfo(imageSrc);
       }
     }
   }, [webcamRef]);
@@ -536,7 +493,7 @@ export function ConsolePage() {
           type="file"
           accept="image/*"
           multiple
-          onChange={handleImageUpload}
+          onChange={getArtworkInfo}
           className="file-input"
           id="image-upload"
         />
