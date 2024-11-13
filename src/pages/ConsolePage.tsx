@@ -164,9 +164,9 @@ export function ConsolePage() {
     devices();
   }, []);
 
-  const videoConstraints = {
-    facingMode: videoFacing === 'front' ? 'user' : { exact: 'environment' },
-  };
+  // const videoConstraints = {
+  //   facingMode: videoFacing === 'front' ? 'user' : { exact: 'environment' },
+  // };
 
   const getArtworkInfo = async (data: string) => {
     const files = data;
@@ -257,11 +257,6 @@ export function ConsolePage() {
 
     const wavStreamPlayer = wavStreamPlayerRef.current;
     await wavStreamPlayer.interrupt();
-  }, []);
-
-  const deleteConversationItem = useCallback(async (id: string) => {
-    const client = clientRef.current;
-    client.deleteItem(id);
   }, []);
 
   const startRecording = async () => {
@@ -505,7 +500,7 @@ export function ConsolePage() {
                   // screenshotFormat="image/jpeg"
                   //commented for now // height={720}
                   // width={1280}
-                  videoConstraints={videoConstraints}
+                  // videoConstraints={videoConstraints}
                   // mirrored={true}
                 />
               </div>
