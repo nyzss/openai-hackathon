@@ -153,20 +153,14 @@ export function ConsolePage() {
   });
 
   const [videoFacing, setVideoFacing] = useState('front');
-  useEffect(() => {
-    const devices = async () => {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
-      if (videoDevices.length > 1) {
-        setVideoFacing('back');
-      }
-    };
-    devices();
-  }, []);
 
-  // const videoConstraints = {
-  //   facingMode: videoFacing === 'front' ? 'user' : { exact: 'environment' },
-  // };
+  const changeCameraSide = () => {
+    setVideoFacing(videoFacing === 'front' ? 'back' : 'front');
+  };
+
+  const videoConstraints = {
+    facingMode: videoFacing === 'front' ? 'user' : { exact: 'environment' },
+  };
 
   const getArtworkInfo = async (data: string) => {
     const files = data;
@@ -493,15 +487,18 @@ export function ConsolePage() {
             </div>
             <div className="text-xl">Welcome to your new museum experience</div>
             <div className="flex justify-center space-x-5">
-              <div className="flex flex-col items-center">
+              <div
+                className="flex flex-col items-center"
+                onDoubleClick={changeCameraSide}
+              >
                 <Webcam
                   audio={false}
                   ref={webcamRef}
                   // screenshotFormat="image/jpeg"
                   //commented for now // height={720}
                   // width={1280}
-                  // videoConstraints={videoConstraints}
-                  // mirrored={true}
+                  videoConstraints={videoConstraints}
+                  mirrored={videoFacing === 'front'}
                 />
               </div>
             </div>
