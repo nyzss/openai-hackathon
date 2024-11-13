@@ -19,7 +19,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, Zap } from 'react-feather';
+import { Mic, MicOff, X, Zap } from 'react-feather';
 import { Button } from '../components/button/Button';
 import OpenAI from 'openai';
 import { z } from 'zod';
@@ -32,11 +32,6 @@ import { Toggle } from '../components/toggle/Toggle';
 /**
  * Type for all event logs
  */
-
-interface UploadedImage {
-  url: string;
-  file: File;
-}
 
 export function ConsolePage() {
   /**
@@ -109,6 +104,22 @@ export function ConsolePage() {
     type: z.string(),
     nationality: z.string(),
   });
+
+  const [videoFacing, setVideoFacing] = useState('front');
+  useEffect(() => {
+    const devices = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      if (videoDevices.length > 1) {
+        setVideoFacing('back');
+      }
+    };
+    devices();
+  }, []);
+
+  const videoConstraints = {
+    facingMode: videoFacing === 'front' ? 'user' : { exact: 'environment' },
+  };
 
   const getArtworkInfo = async (data: string) => {
     const files = data;
@@ -426,12 +437,11 @@ export function ConsolePage() {
                 <Webcam
                   audio={false}
                   ref={webcamRef}
-                  screenshotFormat="image/jpeg"
-                  //commented for now
-                  // height={720}
+                  // screenshotFormat="image/jpeg"
+                  //commented for now // height={720}
                   // width={1280}
-                  // videoConstraints={videoConstraints}
-                  mirrored={true}
+                  videoConstraints={videoConstraints}
+                  // mirrored={true}
                 />
               </div>
             </div>
@@ -443,21 +453,26 @@ export function ConsolePage() {
               values={['none', 'server_vad']}
               onChange={(_, value) => changeTurnEndType(value)}
             />
+
             {isConnected && canPushToTalk && (
               <Button
-                label={isRecording ? 'release to send' : 'push to talk'}
-                buttonStyle={isRecording ? 'alert' : 'regular'}
+                label={isRecording ? 'Release to Send' : 'Push to Talk'}
+                icon={isRecording ? MicOff : Mic}
+                iconPosition="start"
                 disabled={!isConnected || !canPushToTalk}
                 onMouseDown={startRecording}
                 onMouseUp={stopRecording}
               />
             )}
-            <div className="spacer" />
+
+            {/* Spacer */}
+            <div className="h-4"></div>
+
+            {/* Connect/Disconnect Button */}
             <Button
-              label={isConnected ? 'disconnect' : 'connect'}
-              iconPosition={isConnected ? 'end' : 'start'}
+              label={isConnected ? 'Disconnect' : 'Connect'}
               icon={isConnected ? X : Zap}
-              buttonStyle={isConnected ? 'regular' : 'action'}
+              iconPosition={isConnected ? 'end' : 'start'}
               onClick={
                 isConnected ? disconnectConversation : connectConversation
               }

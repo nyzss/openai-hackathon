@@ -1,50 +1,38 @@
+// Button.tsx
 import React from 'react';
-import './Button.scss';
-
 import { Icon } from 'react-feather';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;
   icon?: Icon;
   iconPosition?: 'start' | 'end';
-  iconColor?: 'red' | 'green' | 'grey';
-  iconFill?: boolean;
-  buttonStyle?: 'regular' | 'action' | 'alert' | 'flush';
 }
 
-export function Button({
+export const Button: React.FC<ButtonProps> = ({
   label = 'Okay',
-  icon = void 0,
+  icon: IconComponent,
   iconPosition = 'start',
-  iconColor = void 0,
-  iconFill = false,
-  buttonStyle = 'regular',
+  disabled = false,
+  className = '',
   ...rest
-}: ButtonProps) {
-  const StartIcon = iconPosition === 'start' ? icon : null;
-  const EndIcon = iconPosition === 'end' ? icon : null;
-  const classList = [];
-  if (iconColor) {
-    classList.push(`icon-${iconColor}`);
-  }
-  if (iconFill) {
-    classList.push(`icon-fill`);
-  }
-  classList.push(`button-style-${buttonStyle}`);
-
+}) => {
   return (
-    <button data-component="Button" className={classList.join(' ')} {...rest}>
-      {StartIcon && (
-        <span className="icon icon-start">
-          <StartIcon />
-        </span>
+    <button
+      className={`flex items-center justify-center gap-2 bg-black text-white font-mono text-sm py-2 px-6 rounded-md
+                  hover:bg-gray-800 active:bg-gray-700 focus:outline-none
+                  disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      disabled={disabled}
+      {...rest}
+    >
+      {IconComponent && iconPosition === 'start' && (
+        <IconComponent className="w-4 h-4" />
       )}
-      <span className="label">{label}</span>
-      {EndIcon && (
-        <span className="icon icon-end">
-          <EndIcon />
-        </span>
+
+      <span>{label}</span>
+
+      {IconComponent && iconPosition === 'end' && (
+        <IconComponent className="w-4 h-4" />
       )}
     </button>
   );
-}
+};

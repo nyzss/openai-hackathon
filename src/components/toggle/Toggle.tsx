@@ -1,66 +1,86 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-import './Toggle.scss';
-
-export function Toggle({
-  defaultValue = false,
-  values,
-  labels,
-  onChange = () => {},
-}: {
+interface ToggleProps {
   defaultValue?: string | boolean;
   values?: string[];
   labels?: string[];
   onChange?: (isEnabled: boolean, value: string) => void;
-}) {
-  if (typeof defaultValue === 'string') {
-    defaultValue = !!Math.max(0, (values || []).indexOf(defaultValue));
-  }
+}
+
+export const Toggle: React.FC<ToggleProps> = ({
+  defaultValue = false,
+  values = ['Off', 'On'],
+  labels = ['Off', 'On'],
+  onChange = () => {},
+}) => {
+  const initialBooleanValue: boolean = (() => {
+    if (typeof defaultValue === 'boolean') {
+      return defaultValue;
+    }
+    const index = values.indexOf(defaultValue);
+    return index !== -1 ? Boolean(index) : false;
+  })();
 
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
-  const [value, setValue] = useState<boolean>(defaultValue);
+  const [isEnabled, setIsEnabled] = useState<boolean>(initialBooleanValue);
 
   const toggleValue = () => {
-    const v = !value;
-    const index = +v;
-    setValue(v);
-    onChange(v, (values || [])[index]);
+    const newValue = !isEnabled;
+    setIsEnabled(newValue);
+    const valueIndex = newValue ? 1 : 0;
+    const selectedValue = values[valueIndex] || '';
+    onChange(newValue, selectedValue);
   };
 
   useEffect(() => {
     const leftEl = leftRef.current;
     const rightEl = rightRef.current;
     const bgEl = bgRef.current;
+
     if (leftEl && rightEl && bgEl) {
-      if (value) {
-        bgEl.style.left = rightEl.offsetLeft + 'px';
-        bgEl.style.width = rightEl.offsetWidth + 'px';
+      if (isEnabled) {
+        bgEl.style.left = `${rightEl.offsetLeft}px`;
+        bgEl.style.width = `${rightEl.offsetWidth}px`;
       } else {
-        bgEl.style.left = '';
-        bgEl.style.width = leftEl.offsetWidth + 'px';
+        bgEl.style.left = `${leftEl.offsetLeft}px`;
+        bgEl.style.width = `${leftEl.offsetWidth}px`;
       }
     }
-  }, [value]);
+  }, [isEnabled]);
 
   return (
     <div
-      data-component="Toggle"
+      className="relative flex items-center gap-2 cursor-pointer overflow-hidden bg-gray-200 text-gray-900 h-10 rounded-md hover:bg-gray-300 transition-colors duration-100"
       onClick={toggleValue}
-      data-enabled={value.toString()}
     >
-      {labels && (
-        <div className="label left" ref={leftRef}>
+      <div
+        className="absolute top-0 bottom-0 bg-gray-900 z-10 rounded-md transition-all duration-100"
+        ref={bgRef}
+      ></div>
+
+      {labels[0] && (
+        <div
+          ref={leftRef}
+          className={`relative px-4 z-20 select-none transition-colors duration-100 ${
+            isEnabled ? 'text-gray-500' : 'text-white'
+          }`}
+        >
           {labels[0]}
         </div>
       )}
-      {labels && (
-        <div className="label right" ref={rightRef}>
+
+      {labels[1] && (
+        <div
+          ref={rightRef}
+          className={`relative px-4 -ml-2 z-20 select-none transition-colors duration-100 ${
+            isEnabled ? 'text-white' : 'text-gray-500'
+          }`}
+        >
           {labels[1]}
         </div>
       )}
-      <div className="toggle-background" ref={bgRef}></div>
     </div>
   );
-}
+};
